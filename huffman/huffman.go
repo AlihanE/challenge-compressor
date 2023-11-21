@@ -1,9 +1,5 @@
 package huffman
 
-import (
-	"fmt"
-)
-
 type Node struct {
 	isLeaf    bool
 	weight    int
@@ -36,28 +32,55 @@ func (n *Node) Char() rune {
 	return n.char
 }
 
-type Sorter struct {
-	arr []*Node
+type BuildState string
+
+const (
+	First  BuildState = "first"
+	Second BuildState = "second"
+	New    BuildState = "new"
+)
+
+type Tree struct {
+	state BuildState
+	Root  *Node
+	count int
 }
+
+func NewTree() *Tree {
+	return &Tree{
+		state: New,
+	}
+}
+
+func (t *Tree) AddNode(node *Node) {
+	if t.count == 0 {
+		t.Root = node
+		t.count++
+		t.state = First
+	} else {
+		switch t.state {
+		case First:
+
+		}
+	}
+}
+
+type Sorter []*Node
 
 func NewSorter() Sorter {
 	return Sorter{}
 }
 
-func (s *Sorter) Add(n *Node) {
-	length := len(s.arr)
-	if length == 0 {
-		s.arr = append(s.arr, n)
-	} else {
-		if s.arr[length-1].Weight() > n.Weight() {
-			s.arr = append([]*Node{n}, s.arr...)
-			fmt.Println(s.arr)
-		} else {
-			s.arr = append(s.arr, n)
-		}
-	}
+func (s Sorter) Len() int {
+	return len(s)
 }
 
-func (s *Sorter) SortedArray() []*Node {
-	return s.arr
+func (s Sorter) Less(i, j int) bool {
+	return s[i].Weight() < s[j].Weight()
+}
+
+func (s Sorter) Swap(i, j int) {
+	tmp := s[i]
+	s[i] = s[j]
+	s[j] = tmp
 }

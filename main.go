@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/AlihanE/challenge-compressor/charcount"
 	"github.com/AlihanE/challenge-compressor/huffman"
@@ -25,12 +26,15 @@ func main() {
 	}
 
 	sorter := huffman.NewSorter()
+	fmt.Println("Counter length", len(*counter))
 	for v, c := range *counter {
 		n := huffman.NewNode(true, c, v)
-		sorter.Add(n)
+		sorter = append(sorter, n)
 	}
 
-	for _, v := range sorter.SortedArray() {
+	sort.Sort(sorter)
+
+	for _, v := range sorter {
 		fmt.Print((*v).Char(), " ", (*v).Weight(), " | ")
 	}
 }
