@@ -43,7 +43,7 @@ func main() {
 		fmt.Println("key", string(k), "val", v)
 	}
 
-	fmt.Println(string(tree.Root.GetNodeByCode([]byte{0, 0}).Char()))
+	fmt.Println(tree.Root.String())
 }
 
 func openFile(filename string) *os.File {

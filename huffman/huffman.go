@@ -50,6 +50,19 @@ func (n *Node) GetNodeByCode(code []byte) *Node {
 	return node
 }
 
+func (n *Node) String() string {
+	left := ""
+	if n.LeftLeaf != nil {
+		left = n.LeftLeaf.String()
+	}
+
+	right := ""
+	if n.RightLeaf != nil {
+		right = n.RightLeaf.String()
+	}
+	return fmt.Sprintf("(%t, %d, %d, %s, %s)", n.isLeaf, n.weight, n.char, left, right)
+}
+
 type Tree struct {
 	Root   *Node
 	count  int
@@ -172,9 +185,7 @@ func PrintTree(node *Node, side string) {
 		return
 	}
 
-	//if node.isLeaf {
 	fmt.Println("leaf", node.IsLeaf(), "weight", node.Weight(), "side", side, "literal", string(node.char))
-	//}
 	PrintTree(node.LeftLeaf, "left")
 	PrintTree(node.RightLeaf, "right")
 }
