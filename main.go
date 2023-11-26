@@ -29,14 +29,21 @@ func main() {
 	fmt.Println("Counter length", len(*counter))
 	for v, c := range *counter {
 		n := huffman.NewNode(true, c, v)
-		sorter = append(sorter, n)
+		sorter.AddNode(n)
 	}
 
 	sort.Sort(sorter)
 
-	for _, v := range sorter {
-		fmt.Print((*v).Char(), " ", (*v).Weight(), " | ")
+	sorter.Print()
+
+	tree := huffman.NewTree(sorter)
+
+	table := tree.GetTable()
+	for k, v := range table {
+		fmt.Println("key", string(k), "val", v)
 	}
+
+	fmt.Println(string(tree.Root.GetNodeByCode([]byte{0, 0}).Char()))
 }
 
 func openFile(filename string) *os.File {

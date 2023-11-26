@@ -1,5 +1,10 @@
 package huffman
 
+import (
+	"fmt"
+	"sort"
+)
+
 type Node struct {
 	isLeaf    bool
 	weight    int
@@ -32,55 +37,169 @@ func (n *Node) Char() rune {
 	return n.char
 }
 
-type BuildState string
-
-const (
-	First  BuildState = "first"
-	Second BuildState = "second"
-	New    BuildState = "new"
-)
-
-type Tree struct {
-	state BuildState
-	Root  *Node
-	count int
-}
-
-func NewTree() *Tree {
-	return &Tree{
-		state: New,
-	}
-}
-
-func (t *Tree) AddNode(node *Node) {
-	if t.count == 0 {
-		t.Root = node
-		t.count++
-		t.state = First
-	} else {
-		switch t.state {
-		case First:
-
+func (n *Node) GetNodeByCode(code []byte) *Node {
+	node := n
+	for _, v := range code {
+		if v > 0 {
+			node = node.RightLeaf
+		} else {
+			node = node.LeftLeaf
 		}
 	}
+
+	return node
 }
 
-type Sorter []*Node
-
-func NewSorter() Sorter {
-	return Sorter{}
+type Tree struct {
+	Root   *Node
+	count  int
+	sorter *Sorter
 }
 
-func (s Sorter) Len() int {
-	return len(s)
+func NewTree(nodes *Sorter) *Tree {
+	return &Tree{
+		sorter: nodes,
+	}
 }
 
-func (s Sorter) Less(i, j int) bool {
-	return s[i].Weight() < s[j].Weight()
+func (t *Tree) buildTree() {
+	has := len(t.sorter.nodes) > 1
+	for has {
+		first := t.sorter.GetFirst()
+		second := t.sorter.GetFirst()
+		if second == nil {
+			t.Root = first
+			has = false
+			return
+		}
+
+		newNode := NewNode(false, first.Weight()+second.Weight(), -1)
+		if first.Weight() > second.Weight() {
+			newNode.LeftLeaf = second
+			newNode.RightLeaf = first
+		} else {
+			newNode.LeftLeaf = first
+			newNode.RightLeaf = second
+		}
+		t.sorter.AddNode(newNode)
+		sort.Sort(t.sorter)
+	}
 }
 
-func (s Sorter) Swap(i, j int) {
-	tmp := s[i]
-	s[i] = s[j]
-	s[j] = tmp
+// func (t *Tree) printNodes() {
+// 	for _, v := range t.sorter.nodes {
+// 		fmt.Printf("%d - %s", v.Weight(), string(v.Char()))
+// 	}
+// 	fmt.Println()
+// }
+
+func (t *Tree) Count() int {
+	return t.count
+}
+
+func (t *Tree) GetTable() map[rune][]byte {
+	table := make(map[rune][]byte)
+	code := []byte{}
+
+	t.buildTree()
+
+	buildPrefixTable(t.Root, code, table)
+
+	return table
+}
+
+func buildPrefixTable(node *Node, code []byte, table map[rune][]byte) {
+	if node == nil {
+		return
+	}
+
+	//fmt.Println("char", string(node.Char()), "code", code, "isLeaf", node.IsLeaf())
+	if node.isLeaf {
+		dst := make([]byte, len(code))
+		copy(dst, code)
+		table[node.char] = dst
+	} else {
+		left := append(code, 0)
+		buildPrefixTable(node.LeftLeaf, left, table)
+		right := append(code, 1)
+		buildPrefixTable(node.RightLeaf, right, table)
+	}
+}
+
+type Sorter struct {
+	nodes []*Node
+}
+
+func NewSorter() *Sorter {
+	return &Sorter{}
+}
+
+func (s *Sorter) Len() int {
+	return len(s.nodes)
+}
+
+func (s *Sorter) Less(i, j int) bool {
+	return s.nodes[i].Weight() < s.nodes[j].Weight()
+}
+
+func (s *Sorter) Swap(i, j int) {
+	tmp := s.nodes[i]
+	s.nodes[i] = s.nodes[j]
+	s.nodes[j] = tmp
+}
+
+func (s *Sorter) GetFirst() *Node {
+	var first *Node
+	if len(s.nodes) > 0 {
+		first = s.nodes[0]
+		s.nodes = s.nodes[1:]
+	}
+	return first
+}
+
+func (s *Sorter) AddNode(node *Node) {
+	s.nodes = append(s.nodes, node)
+}
+
+func (s *Sorter) Print() {
+	for _, v := range s.nodes {
+		fmt.Println("literal", string(v.Char()), "weight", v.Weight())
+	}
+}
+
+func PrintTree(node *Node, side string) {
+	if node == nil {
+		return
+	}
+
+	//if node.isLeaf {
+	fmt.Println("leaf", node.IsLeaf(), "weight", node.Weight(), "side", side, "literal", string(node.char))
+	//}
+	PrintTree(node.LeftLeaf, "left")
+	PrintTree(node.RightLeaf, "right")
+}
+
+func (t *Tree) PrintTreeByLevel() {
+	levels := make(map[int][]*Node)
+
+	getLevelsAndNodes(t.Root, 0, levels)
+	for i := 0; i < len(levels); i++ {
+		for _, v := range levels[i] {
+
+			fmt.Printf("(%d %s)      ", v.Weight(), string(v.Char()))
+		}
+		fmt.Println("")
+		fmt.Println("-------------------------------")
+	}
+}
+
+func getLevelsAndNodes(node *Node, level int, levels map[int][]*Node) {
+	if node == nil {
+		return
+	}
+
+	levels[level] = append(levels[level], node)
+
+	getLevelsAndNodes(node.LeftLeaf, level+1, levels)
+	getLevelsAndNodes(node.RightLeaf, level+1, levels)
 }
