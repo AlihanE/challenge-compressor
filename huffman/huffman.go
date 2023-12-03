@@ -3,6 +3,8 @@ package huffman
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 type Node struct {
@@ -75,7 +77,7 @@ func NewTree(nodes *Sorter) *Tree {
 	}
 }
 
-func (t *Tree) buildTree() {
+func (t *Tree) BuildTree() {
 	has := len(t.sorter.nodes) > 1
 	for has {
 		first := t.sorter.GetFirst()
@@ -114,7 +116,7 @@ func (t *Tree) GetTable() map[rune][]byte {
 	table := make(map[rune][]byte)
 	code := []byte{}
 
-	t.buildTree()
+	t.BuildTree()
 
 	buildPrefixTable(t.Root, code, table)
 
@@ -126,7 +128,6 @@ func buildPrefixTable(node *Node, code []byte, table map[rune][]byte) {
 		return
 	}
 
-	//fmt.Println("char", string(node.Char()), "code", code, "isLeaf", node.IsLeaf())
 	if node.isLeaf {
 		dst := make([]byte, len(code))
 		copy(dst, code)
@@ -137,6 +138,25 @@ func buildPrefixTable(node *Node, code []byte, table map[rune][]byte) {
 		right := append(code, 1)
 		buildPrefixTable(node.RightLeaf, right, table)
 	}
+}
+
+func GetLeafByCode(node *Node, code []byte, bit int) *Node {
+	if node == nil {
+		return nil
+	}
+
+	var res *Node
+	if code[bit] == 0 {
+		res = node.LeftLeaf
+	} else if code[bit] == 1 {
+		res = node.RightLeaf
+	}
+
+	if len(code) == bit+1 {
+		return res
+	}
+
+	return GetLeafByCode(res, code, bit+1)
 }
 
 type Sorter struct {
@@ -177,6 +197,30 @@ func (s *Sorter) AddNode(node *Node) {
 func (s *Sorter) Print() {
 	for _, v := range s.nodes {
 		fmt.Println("literal", string(v.Char()), "weight", v.Weight())
+	}
+}
+
+func (s *Sorter) String() string {
+	sl := []string{}
+	for _, v := range s.nodes {
+		sl = append(sl, fmt.Sprintf("%d,%d", v.char, v.weight))
+	}
+	return strings.Join(sl, ";")
+}
+
+func (s *Sorter) Parse(input string) {
+	arr := strings.Split(input, ";")
+	for _, v := range arr {
+		subArr := strings.Split(v, ",")
+		weight, err := strconv.Atoi(subArr[1])
+		if err != nil {
+			panic(err)
+		}
+		char, err := strconv.Atoi(subArr[0])
+		if err != nil {
+			panic(err)
+		}
+		s.AddNode(NewNode(true, weight, rune(char)))
 	}
 }
 
