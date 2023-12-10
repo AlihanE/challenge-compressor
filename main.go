@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 
@@ -25,42 +26,53 @@ func main() {
 
 func decode(filename string) {
 	f3 := openFile(filename)
-	s3 := bufio.NewScanner(f3)
+	s3 := bufio.NewReader(f3)
 	s := huffman.NewSorter()
-	if s3.Scan() {
-		tt := s3.Text()
-		s.Parse(string(tt))
+	line, _, err := s3.ReadLine()
+	if err != nil {
+		panic(err)
 	}
+	s.Parse(string(line))
 
 	w := writer.New(filename, "txt", "-dec")
 	defer w.Close()
 
 	tree := huffman.NewTree(s)
 	tree.BuildTree()
-	for s3.Scan() {
-		code := []byte{}
-		for _, b := range s3.Bytes() {
-			code = append(code, b)
-			node := huffman.GetLeafByCode(tree.Root, code, 0)
-			if node.IsLeaf() {
-				code = []byte{}
-				w.Write([]byte{byte(node.Char())})
-			}
+	code := []byte{}
+	for {
+		b, err := s3.ReadByte()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+		code = append(code, b)
+		node := huffman.GetLeafByCode(tree.Root, code, 0)
+		if node.IsLeaf() {
+			code = []byte{}
+			w.Writer.WriteRune(node.Char())
 		}
 	}
+	w.Writer.Flush()
 	fmt.Println()
 }
 
 func encode(filename string) {
 	f := openFile(filename)
-	s := bufio.NewScanner(f)
+	s := bufio.NewReader(f)
 
 	counter := charcount.New()
-	for s.Scan() {
-		for _, b := range s.Bytes() {
-			counter.Add(rune(b))
+	for {
+		r, _, err := s.ReadRune()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
 		}
+		counter.Add(r)
 	}
+
 	f.Close()
 	sorter := huffman.NewSorter()
 	fmt.Println("Counter length", len(*counter))
@@ -83,23 +95,32 @@ func encode(filename string) {
 	w := writer.New(filename, "pee", "")
 	defer w.Close()
 
-	_, err := w.Write([]byte(sorterString + "\r\n"))
+	nn, err := w.Writer.Write([]byte(sorterString + "\r\n"))
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Println("nn", nn)
+
 	f2 := openFile(filename)
 	defer f2.Close()
-	s2 := bufio.NewScanner(f2)
-	for s2.Scan() {
-		for _, b := range s2.Bytes() {
-			val := table[rune(b)]
-			_, err := w.Write(val)
+	s2 := bufio.NewReader(f2)
+	for {
+		r, _, err := s2.ReadRune()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+		val := table[r]
+		for _, c := range val {
+			err = w.Writer.WriteByte(c)
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
+	w.Writer.Flush()
 }
 
 func openFile(filename string) *os.File {

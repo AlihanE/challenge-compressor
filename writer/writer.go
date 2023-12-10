@@ -1,12 +1,14 @@
 package writer
 
 import (
+	"bufio"
 	"os"
 	"strings"
 )
 
 type Writer struct {
-	file *os.File
+	Writer *bufio.Writer
+	file   *os.File
 }
 
 func New(name string, ext string, postfix string) *Writer {
@@ -15,11 +17,8 @@ func New(name string, ext string, postfix string) *Writer {
 	if err != nil {
 		panic(err)
 	}
-	return &Writer{file: f}
-}
-
-func (w *Writer) Write(b []byte) (int, error) {
-	return w.file.Write(b)
+	w := bufio.NewWriter(f)
+	return &Writer{Writer: w, file: f}
 }
 
 func (w *Writer) Close() {
