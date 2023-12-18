@@ -22,3 +22,12 @@ func (c *CharCount) Print() {
 		fmt.Println("Char", string(v), "count", count)
 	}
 }
+
+func (c *CharCount) TotalChars() int {
+	total := 0
+	for _, count := range *c {
+		total += count
+	}
+
+	return total
+}

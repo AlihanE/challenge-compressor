@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "args": ["-d", "text2.pee"]
+            "args": ["-e", "text2.txt"]
         }
     ]
 }

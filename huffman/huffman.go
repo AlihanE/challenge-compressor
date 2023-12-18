@@ -112,9 +112,9 @@ func (t *Tree) Count() int {
 	return t.count
 }
 
-func (t *Tree) GetTable() map[rune][]byte {
-	table := make(map[rune][]byte)
-	code := []byte{}
+func (t *Tree) GetTable() map[rune][]int {
+	table := make(map[rune][]int)
+	code := []int{}
 
 	t.BuildTree()
 
@@ -123,13 +123,13 @@ func (t *Tree) GetTable() map[rune][]byte {
 	return table
 }
 
-func buildPrefixTable(node *Node, code []byte, table map[rune][]byte) {
+func buildPrefixTable(node *Node, code []int, table map[rune][]int) {
 	if node == nil {
 		return
 	}
 
 	if node.isLeaf {
-		dst := make([]byte, len(code))
+		dst := make([]int, len(code))
 		copy(dst, code)
 		table[node.char] = dst
 	} else {

@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
+	"strings"
 
+	"github.com/AlihanE/challenge-compressor/bit"
 	"github.com/AlihanE/challenge-compressor/charcount"
 	"github.com/AlihanE/challenge-compressor/huffman"
-	"github.com/AlihanE/challenge-compressor/writer"
 )
 
 func main() {
@@ -34,27 +36,50 @@ func decode(filename string) {
 	}
 	s.Parse(string(line))
 
-	w := writer.New(filename, "txt", "-dec")
-	defer w.Close()
+	line, _, err = s3.ReadLine()
+	if err != nil {
+		panic(err)
+	}
+
+	charCount, err := strconv.Atoi(string(line))
+	if err != nil {
+		panic(err)
+	}
+
+	nameWithoutExt := GetFileNameWithoutExt(filename)
+	f, err := os.Create("./" + nameWithoutExt + "-dec" + "." + "pee")
+	if err != nil {
+		panic(err)
+	}
+	w := bufio.NewWriter(f)
 
 	tree := huffman.NewTree(s)
 	tree.BuildTree()
 	code := []byte{}
-	for {
+	cont := true
+	for cont {
 		b, err := s3.ReadByte()
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(err)
 		}
-		code = append(code, b)
-		node := huffman.GetLeafByCode(tree.Root, code, 0)
-		if node.IsLeaf() {
-			code = []byte{}
-			w.Writer.WriteRune(node.Char())
+		for _, bit := range bit.GetBitArray(b) {
+			code = append(code, bit)
+			node := huffman.GetLeafByCode(tree.Root, code, 0)
+			if node.IsLeaf() {
+				charCount--
+				code = []byte{}
+				w.WriteRune(node.Char())
+				if charCount == 0 {
+					cont = false
+					break
+				}
+			}
 		}
+
 	}
-	w.Writer.Flush()
+	w.Flush()
 	fmt.Println()
 }
 
@@ -92,19 +117,36 @@ func encode(filename string) {
 		fmt.Println("key", string(k), "val", v)
 	}
 
-	w := writer.New(filename, "pee", "")
-	defer w.Close()
+	nameWithoutExt := GetFileNameWithoutExt(filename)
+	f, err := os.Create("./" + nameWithoutExt + "." + "pee")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
 
-	nn, err := w.Writer.Write([]byte(sorterString + "\r\n"))
+	nn, err := w.Write([]byte(sorterString + "\r\n"))
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("nn", nn)
 
+	nn, err = w.Write([]byte(strconv.Itoa(counter.TotalChars()) + "\r\n"))
+	if err != nil {
+		panic(err)
+	}
+
+	w.Flush()
+
+	fmt.Println("nn", nn)
+
 	f2 := openFile(filename)
 	defer f2.Close()
 	s2 := bufio.NewReader(f2)
+
+	b := bit.NewBitWriter(f)
+
 	for {
 		r, _, err := s2.ReadRune()
 		if err == io.EOF {
@@ -112,15 +154,11 @@ func encode(filename string) {
 		} else if err != nil {
 			panic(err)
 		}
-		val := table[r]
-		for _, c := range val {
-			err = w.Writer.WriteByte(c)
-			if err != nil {
-				panic(err)
-			}
-		}
+		val := table[rune(r)]
+
+		b.AddBits(val)
 	}
-	w.Writer.Flush()
+	b.Close()
 }
 
 func openFile(filename string) *os.File {
@@ -129,4 +167,8 @@ func openFile(filename string) *os.File {
 		panic(err)
 	}
 	return f
+}
+
+func GetFileNameWithoutExt(name string) string {
+	return name[:strings.Index(name, ".")]
 }
